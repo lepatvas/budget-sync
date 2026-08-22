@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mon Budget</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E2A26">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #E9E6DC;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px 10px 60px;
+  }
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    background: #F6F4EF;
+    border-radius: 20px;
+    border: 1px solid #DEDACD;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .error-banner {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #7A2A1C;
+    color: #F9E6E1;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .sync-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .sync-banner.syncing { background: #D9EBE2; color: #1F5C46; }
+  .sync-banner.offline { background: #EFEAD8; color: #8A6B1F; }
+  .sync-banner .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .solde-banque-box {
+    align-self: center;
+    background: #1E2A26;
+    border-radius: 14px;
+    padding: 10px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 220px;
+  }
+  .solde-banque-label {
+    color: #C9C6B8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .solde-banque-value-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    cursor: pointer;
+  }
+  .solde-banque-value {
+    color: #F6F4EF;
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .pencil { color: #9A9890; font-size: 13px; }
+  .edit-solde-row { display: none; align-items: center; gap: 6px; margin-top: 4px; }
+  .edit-solde-row.active { display: flex; }
+  .solde-banque-value-row.hidden { display: none; }
+  #solde-input {
+    width: 130px;
+    background: #F6F4EF;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1E2A26;
+    text-align: center;
+  }
+  .small-check-btn {
+    background: #1F5C46;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: #F6F4EF;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .entry-labels-row { display: flex; gap: 6px; padding: 0 2px; }
+  .entry-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #9A9890;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .entry-row { display: flex; gap: 6px; align-items: center; }
+  .entry-input {
+    min-width: 0;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 8px 9px;
+    font-size: 12.5px;
+    background: #FFFFFF;
+    color: #1E2A26;
+    width: 100%;
+  }
+  .entry-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #1F5C46;
+    color: #F6F4EF;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #6B6A63;
+    cursor: pointer;
+  }
+  .btn-cancel.active { display: flex; }
+  .checkbox {
+    width: 30px;
+    height: 34px;
+    min-width: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #C9C6B8;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #F6F4EF;
+  }
+  .checkbox.on { background: #1F5C46; border-color: #1F5C46; }
+  .type-toggle {
+    display: flex;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 62px;
+  }
+  .type-btn {
+    flex: 1;
+    border: none;
+    background: #FFFFFF;
+    color: #9A9890;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 8px 0;
+    cursor: pointer;
+  }
+  .type-btn.depense.active { background: #F3DED8; color: #7A2A1C; }
+  .type-btn.recette.active { background: #D9EBE2; color: #1F5C46; }
+  .type-btn + .type-btn { border-left: 1px solid #DEDACD; }
+  .recap-panel {
+    background: #FFFFFF;
+    border: 1px solid #DEDACD;
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 180px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .recap-title { font-size: 12.5px; font-weight: 600; color: #6B6A63; display: block; margin-bottom: 2px; }
+  .recap-hint { font-size: 10.5px; color: #B3B1A7; display: block; margin-bottom: 8px; }
+  .recap-filters { display: flex; gap: 6px; margin-bottom: 10px; }
+  .filter-btn {
+    border: 1px solid #DEDACD;
+    background: #FFFFFF;
+    color: #9A9890;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .filter-btn.active { background: #1E2A26; color: #F6F4EF; border-color: #1E2A26; }
+  .show-more-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px dashed #DEDACD;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B6A63;
+    cursor: pointer;
+  }
+  .empty-text { font-size: 12.5px; color: #B3B1A7; padding: 10px 0; }
+  .recap-list { list-style: none; margin: 0; padding: 0; }
+  .recap-row {
+    display: grid;
+    grid-template-columns: 38px 1fr auto 24px 46px;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 0;
+    border-bottom: 1px solid #F0EDE2;
+    font-size: 12.5px;
+  }
+  .recap-date { color: #9A9890; font-size: 11px; }
+  .recap-libelle { color: #3D3B34; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recap-montant { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .recap-coche-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1.5px solid #C9C6B8;
+    background: #FFFFFF;
+    cursor: pointer;
+    padding: 0;
+    color: #F6F4EF;
+    font-size: 12px;
+    margin: 0 auto;
+  }
+  .recap-coche-btn.on { background: #1F5C46; border-color: #1F5C46; }
+  .recap-row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+  .mini-btn { background: transparent; border: none; padding: 3px; cursor: pointer; font-size: 12px; color: #9A9890; }
+  .fixes-box {
+    background: #EFECE1;
+    border: 1px solid #DEDACD;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fixes-title { font-size: 12.5px; font-weight: 600; color: #6B6A63; }
+  .fixes-hint { font-size: 10.5px; color: #9A9890; margin-top: -4px; }
+  .op-list { list-style: none; margin: 4px 0 0; padding: 0; }
+  .op-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #E4E0D3; }
+  .op-main { flex: 1; display: flex; align-items: center; gap: 6px; overflow: hidden; cursor: pointer; }
+  .op-libelle { font-size: 12.5px; color: #3D3B34; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fixe-jour { font-size: 10.5px; color: #9A9890; margin-left: auto; padding-right: 4px; }
+  .op-montant { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .solde-reel-box {
+    align-self: center;
+    border-radius: 14px;
+    padding: 10px 26px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .solde-reel-label { color: #EFEAD8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .solde-reel-value { color: #F6F4EF; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .support-link {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #9A9890;
+    font-size: 11.5px;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #DEDACD;
+    margin-top: -2px;
+  }
+  .support-link:hover { color: #6B6A63; border-color: #C9C6B8; }
+  input[type="date"], input[type="number"] { font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="error-banner" id="error-banner">Sauvegarde impossible sur cet appareil.</div>
+  <div class="sync-banner offline" id="sync-banner"><span class="dot"></span><span id="sync-text">Hors ligne (config Firebase manquante)</span></div>
+
+  <!-- Solde Banque -->
+  <div class="solde-banque-box">
+    <span class="solde-banque-label">Solde Banque</span>
+    <div class="solde-banque-value-row" id="solde-display" onclick="startEditSolde()">
+      <span class="solde-banque-value" id="solde-value">0,00 €</span>
+      <span class="pencil">&#9998;</span>
+    </div>
+    <div class="edit-solde-row" id="solde-edit">
+      <input id="solde-input" inputmode="decimal" />
+      <button class="small-check-btn" onclick="saveSolde()">&#10003;</button>
+    </div>
+  </div>
+
+  <!-- Ligne de saisie operation -->
+  <div class="entry-labels-row">
+    <span class="entry-label" style="flex:1.1">Date</span>
+    <span class="entry-label" style="flex:2">Libellé</span>
+  </div>
+  <div class="entry-row">
+    <input type="date" id="op-date" class="entry-input" style="flex:1.1">
+    <input type="text" id="op-libelle" class="entry-input" style="flex:2" placeholder="Libellé">
+  </div>
+  <div class="entry-labels-row">
+    <span class="entry-label" style="flex:1.5">Montant</span>
+    <span class="entry-label" style="width:62px;text-align:center">Type</span>
+    <span class="entry-label" style="width:34px;text-align:center">Réglé</span>
+  </div>
+  <div class="entry-row">
+    <input type="text" id="op-montant" class="entry-input" style="flex:1.5" placeholder="Montant" inputmode="decimal">
+    <div class="type-toggle">
+      <button type="button" class="type-btn depense active" id="op-type-depense" onclick="setOpType('depense')">&minus;</button>
+      <button type="button" class="type-btn recette" id="op-type-recette" onclick="setOpType('recette')">+</button>
+    </div>
+    <button class="checkbox" id="op-coche" onclick="toggleDraftCoche('op')">&#10003;</button>
+  </div>
+  <div class="entry-actions">
+    <button class="btn-cancel" id="op-cancel" onclick="resetOpDraft()">&#10005; Annuler</button>
+    <button class="btn-add" id="op-submit" onclick="handleAddOp()">+ Ajouter l'opération</button>
+  </div>
+
+  <!-- Grand panneau récapitulatif -->
+  <div class="recap-panel">
+    <span class="recap-title">Récapitulatif des dernières opérations</span>
+    <span class="recap-hint">Cochez pour indiquer qu'une opération est passée en banque</span>
+    <div class="recap-filters">
+      <button class="filter-btn active" id="filter-toutes" onclick="setFilter('toutes')">Toutes</button>
+      <button class="filter-btn" id="filter-attente" onclick="setFilter('attente')">En attente</button>
+      <button class="filter-btn" id="filter-reglees" onclick="setFilter('reglees')">Réglées</button>
+    </div>
+    <div id="recap-content"></div>
+  </div>
+
+  <!-- Opérations récurrentes (dépenses ET rentrées fixes) -->
+  <div class="fixes-box">
+    <span class="fixes-title">Opérations récurrentes</span>
+    <span class="fixes-hint">Eau, assurance, loyer... mais aussi salaire, allocations : à saisir une fois, sans les réécrire chaque mois</span>
+    <div class="entry-labels-row">
+      <span class="entry-label" style="flex:1.4">Libellé</span>
+      <span class="entry-label" style="flex:0.9">Montant</span>
+      <span class="entry-label" style="width:52px;text-align:center">Type</span>
+      <span class="entry-label" style="width:40px">Jour</span>
+    </div>
+    <div class="entry-row">
+      <input type="text" id="fixe-libelle" class="entry-input" style="flex:1.4" placeholder="Libellé">
+      <input type="text" id="fixe-montant" class="entry-input" style="flex:0.9" placeholder="Montant" inputmode="decimal">
+      <div class="type-toggle" style="width:52px">
+        <button type="button" class="type-btn depense active" id="fixe-type-depense" onclick="setFixeType('depense')">&minus;</button>
+        <button type="button" class="type-btn recette" id="fixe-type-recette" onclick="setFixeType('recette')">+</button>
+      </div>
+      <input type="number" id="fixe-jour" class="entry-input" style="width:40px" min="1" max="31" placeholder="Jr">
+    </div>
+    <div class="entry-row">
+      <span class="entry-label" style="align-self:center">Réglé ce mois-ci</span>
+      <button class="checkbox" id="fixe-coche" onclick="toggleDraftCoche('fixe')">&#10003;</button>
+    </div>
+    <div class="entry-actions">
+      <button class="btn-cancel" id="fixe-cancel" onclick="resetFixeDraft()">&#10005; Annuler</button>
+      <button class="btn-add" id="fixe-submit" onclick="handleAddFixe()">+ Ajouter l'opération récurrente</button>
+    </div>
+    <ul class="op-list" id="fixe-list"></ul>
+  </div>
+
+  <!-- Solde Reel -->
+  <div class="solde-reel-box" id="solde-reel-box">
+    <span class="solde-reel-label">Solde Reel</span>
+    <span class="solde-reel-value" id="solde-reel-value">0,00 €</span>
+  </div>
+
+  <!-- Soutien / don -->
+  <a class="support-link" href="https://paypal.me/VOTRE-PSEUDO-PAYPAL" target="_blank" rel="noopener">
+    ☕ Soutenir ce projet
+  </a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4K2MwZZmUSbmkXTCPmMvvbGniC0H7Cus",
+  authDomain: "budgetmob-f5f16.firebaseapp.com",
+  databaseURL: "https://budgetmob-f5f16-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "budgetmob-f5f16",
+};
+
+const FIREBASE_ENABLED = firebaseConfig.apiKey !== "VOTRE_API_KEY";
+
+const STORAGE_KEY = "budget-app-data-v1";
+let data = { soldeBancaire: 0, transactions: [], depensesFixes: [] };
+let editOpId = null;
+let editFixeId = null;
+let opType = "depense";
+let fixeType = "depense";
+let recapFilter = "toutes";
+let recapVisibleCount = 15;
+const RECAP_PAGE_SIZE = 15;
+let dbRef = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function formatEUR(n) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0); }
+function formatDateFR(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function setSyncStatus(state, text) {
+  const banner = document.getElementById("sync-banner");
+  banner.classList.remove("syncing", "offline");
+  banner.classList.add(state);
+  document.getElementById("sync-text").textContent = text;
+}
+
+function setOpType(type) {
+  opType = type;
+  document.getElementById("op-type-depense").classList.toggle("active", type === "depense");
+  document.getElementById("op-type-recette").classList.toggle("active", type === "recette");
+}
+
+function setFixeType(type) {
+  fixeType = type;
+  document.getElementById("fixe-type-depense").classList.toggle("active", type === "depense");
+  document.getElementById("fixe-type-recette").classList.toggle("active", type === "recette");
+}
+
+function setFilter(f) {
+  recapFilter = f;
+  recapVisibleCount = RECAP_PAGE_SIZE;
+  document.getElementById("filter-toutes").classList.toggle("active", f === "toutes");
+  document.getElementById("filter-attente").classList.toggle("active", f === "attente");
+  document.getElementById("filter-reglees").classList.toggle("active", f === "reglees");
+  render();
+}
+
+function showMoreRecap() {
+  recapVisibleCount += RECAP_PAGE_SIZE;
+  render();
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [] }, JSON.parse(raw));
+  } catch (e) { /* pas de donnees existantes */ }
+}
+
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    document.getElementById("error-banner").style.display = "none";
+  } catch (e) {
+    document.getElementById("error-banner").style.display = "flex";
+  }
+}
+
+function save() {
+  saveToLocalStorage();
+  if (FIREBASE_ENABLED && dbRef) {
+    set(dbRef, data).catch(() => {
+      document.getElementById("error-banner").textContent = "Synchronisation impossible (verifiez votre connexion).";
+      document.getElementById("error-banner").style.display = "flex";
+    });
+  }
+}
+
+async function initFirebaseSync() {
+  if (!FIREBASE_ENABLED) {
+    loadFromLocalStorage();
+    setSyncStatus("offline", "Hors ligne (config Firebase manquante)");
+    render();
+    return;
+  }
+  try {
+    setSyncStatus("offline", "Connexion en cours...");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    await signInAnonymously(auth);
+    dbRef = ref(db, "budget");
+    onValue(dbRef, (snapshot) => {
+      const remote = snapshot.val();
+      if (remote) {
+        data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [] }, remote);
+        saveToLocalStorage();
+      } else {
+        loadFromLocalStorage();
+        set(dbRef, data);
+      }
+      setSyncStatus("syncing", "Synchronise entre vos appareils");
+      render();
+    }, () => {
+      loadFromLocalStorage();
+      setSyncStatus("offline", "Hors ligne (connexion perdue)");
+      render();
+    });
+  } catch (e) {
+    loadFromLocalStorage();
+    setSyncStatus("offline", "Hors ligne (config Firebase invalide)");
+    render();
+  }
+}
+
+function startEditSolde() {
+  document.getElementById("solde-display").classList.add("hidden");
+  document.getElementById("solde-edit").classList.add("active");
+  const input = document.getElementById("solde-input");
+  input.value = data.soldeBancaire;
+  input.focus();
+}
+
+function saveSolde() {
+  const val = parseFloat(document.getElementById("solde-input").value.replace(",", "."));
+  if (isNaN(val)) return;
+  data.soldeBancaire = val;
+  save();
+  document.getElementById("solde-display").classList.remove("hidden");
+  document.getElementById("solde-edit").classList.remove("active");
+  render();
+}
+
+function toggleDraftCoche(prefix) {
+  const btn = document.getElementById(prefix + "-coche");
+  btn.classList.toggle("on");
+}
+
+function resetOpDraft() {
+  editOpId = null;
+  document.getElementById("op-date").value = todayISO();
+  document.getElementById("op-libelle").value = "";
+  document.getElementById("op-montant").value = "";
+  document.getElementById("op-coche").classList.remove("on");
+  document.getElementById("op-submit").textContent = "+ Ajouter l'opération";
+  document.getElementById("op-cancel").classList.remove("active");
+  setOpType("depense");
+}
+
+function handleAddOp() {
+  const date = document.getElementById("op-date").value;
+  const libelle = document.getElementById("op-libelle").value.trim();
+  let montant = parseFloat(document.getElementById("op-montant").value.replace(",", "."));
+  const coche = document.getElementById("op-coche").classList.contains("on");
+  if (!date || !libelle || isNaN(montant)) return;
+  montant = opType === "depense" ? -Math.abs(montant) : Math.abs(montant);
+
+  if (editOpId) {
+    const t = data.transactions.find(x => x.id === editOpId);
+    if (t) { t.date = date; t.libelle = libelle; t.montant = montant; t.coche = coche; }
+  } else {
+    data.transactions.push({ id: uid(), date, libelle, montant, coche });
+  }
+  save();
+  resetOpDraft();
+  render();
+}
+
+function startEditOp(id) {
+  const t = data.transactions.find(x => x.id === id);
+  if (!t) return;
+  editOpId = id;
+  document.getElementById("op-date").value = t.date;
+  document.getElementById("op-libelle").value = t.libelle;
+  document.getElementById("op-montant").value = Math.abs(t.montant);
+  setOpType(t.montant < 0 ? "depense" : "recette");
+  document.getElementById("op-coche").classList.toggle("on", t.coche);
+  document.getElementById("op-submit").textContent = "\u2713 Enregistrer";
+  document.getElementById("op-cancel").classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteOp(id) {
+  data.transactions = data.transactions.filter(x => x.id !== id);
+  if (editOpId === id) resetOpDraft();
+  save();
+  render();
+}
+
+function toggleOpCoche(id) {
+  const t = data.transactions.find(x => x.id === id);
+  if (t) t.coche = !t.coche;
+  save();
+  render();
+}
+
+function resetFixeDraft() {
+  editFixeId = null;
+  document.getElementById("fixe-libelle").value = "";
+  document.getElementById("fixe-montant").value = "";
+  document.getElementById("fixe-jour").value = "";
+  document.getElementById("fixe-coche").classList.remove("on");
+  document.getElementById("fixe-submit").textContent = "+ Ajouter l'opération récurrente";
+  document.getElementById("fixe-cancel").classList.remove("active");
+  setFixeType("depense");
+}
+
+function handleAddFixe() {
+  const libelle = document.getElementById("fixe-libelle").value.trim();
+  const montant = parseFloat(document.getElementById("fixe-montant").value.replace(",", "."));
+  const jourRaw = document.getElementById("fixe-jour").value;
+  const jour = jourRaw ? parseInt(jourRaw, 10) : null;
+  const coche = document.getElementById("fixe-coche").classList.contains("on");
+  if (!libelle || isNaN(montant)) return;
+
+  if (editFixeId) {
+    const f = data.depensesFixes.find(x => x.id === editFixeId);
+    if (f) { f.libelle = libelle; f.montant = Math.abs(montant); f.jour = jour; f.coche = coche; f.type = fixeType; }
+  } else {
+    data.depensesFixes.push({ id: uid(), libelle, montant: Math.abs(montant), jour, coche, type: fixeType });
+  }
+  save();
+  resetFixeDraft();
+  render();
+}
+
+function startEditFixe(id) {
+  const f = data.depensesFixes.find(x => x.id === id);
+  if (!f) return;
+  editFixeId = id;
+  document.getElementById("fixe-libelle").value = f.libelle;
+  document.getElementById("fixe-montant").value = f.montant;
+  document.getElementById("fixe-jour").value = f.jour || "";
+  document.getElementById("fixe-coche").classList.toggle("on", f.coche);
+  setFixeType(f.type || "depense");
+  document.getElementById("fixe-submit").textContent = "\u2713 Enregistrer";
+  document.getElementById("fixe-cancel").classList.add("active");
+}
+
+function deleteFixe(id) {
+  data.depensesFixes = data.depensesFixes.filter(x => x.id !== id);
+  if (editFixeId === id) resetFixeDraft();
+  save();
+  render();
+}
+
+function toggleFixeCoche(id) {
+  const f = data.depensesFixes.find(x => x.id === id);
+  if (f) f.coche = !f.coche;
+  save();
+  render();
+}
+
+function render() {
+  document.getElementById("solde-value").textContent = formatEUR(data.soldeBancaire);
+
+  const transNonCochees = data.transactions.filter(t => !t.coche);
+  const fixesNonCochees = data.depensesFixes.filter(f => !f.coche);
+  const impactTrans = transNonCochees.reduce((s, t) => s + Number(t.montant), 0);
+  const impactFixes = fixesNonCochees.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
+  const soldeReel = Number(data.soldeBancaire) + impactTrans + impactFixes;
+
+  document.getElementById("solde-reel-value").textContent = formatEUR(soldeReel);
+  document.getElementById("solde-reel-box").style.background = soldeReel >= 0 ? "#1F5C46" : "#7A2A1C";
+
+  let operationsTriees = [...data.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (recapFilter === "attente") operationsTriees = operationsTriees.filter(t => !t.coche);
+  if (recapFilter === "reglees") operationsTriees = operationsTriees.filter(t => t.coche);
+
+  const recapEl = document.getElementById("recap-content");
+  if (operationsTriees.length === 0) {
+    const msg = recapFilter === "attente" ? "Aucune opération en attente." : recapFilter === "reglees" ? "Aucune opération réglée." : "Aucune opération enregistrée.";
+    recapEl.innerHTML = `<p class="empty-text">${msg}</p>`;
+  } else {
+    const visibles = operationsTriees.slice(0, recapVisibleCount);
+    const reste = operationsTriees.length - visibles.length;
+    recapEl.innerHTML = '<ul class="recap-list">' + visibles.map(t => `
+      <li class="recap-row">
+        <span class="recap-date">${formatDateFR(t.date)}</span>
+        <span class="recap-libelle">${escapeHtml(t.libelle)}</span>
+        <span class="recap-montant" style="color:${t.montant >= 0 ? '#1F5C46' : '#7A2A1C'}">${t.montant >= 0 ? '+' : ''}${formatEUR(t.montant)}</span>
+        <button class="recap-coche-btn ${t.coche ? 'on' : ''}" title="Marquer comme passée en banque" onclick="toggleOpCoche('${t.id}')">${t.coche ? '&#10003;' : ''}</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp('${t.id}')">&#9998;</button>
+          <button class="mini-btn" onclick="deleteOp('${t.id}')">&#128465;</button>
+        </span>
+      </li>
+    `).join("") + '</ul>' + (reste > 0 ? `<button class="show-more-btn" onclick="showMoreRecap()">Voir ${Math.min(reste, RECAP_PAGE_SIZE)} de plus (${reste} restantes)</button>` : '');
+  }
+
+  const fixesTriees = [...data.depensesFixes].sort((a, b) => (a.jour || 0) - (b.jour || 0));
+  const fixeListEl = document.getElementById("fixe-list");
+  fixeListEl.innerHTML = fixesTriees.map(f => {
+    const isRecette = f.type === "recette";
+    return `
+    <li class="op-row">
+      <button class="checkbox ${f.coche ? 'on' : ''}" onclick="toggleFixeCoche('${f.id}')">${f.coche ? '&#10003;' : ''}</button>
+      <span class="op-main" onclick="startEditFixe('${f.id}')">
+        <span class="op-libelle">${escapeHtml(f.libelle)}</span>
+        ${f.jour ? `<span class="fixe-jour">le ${f.jour}</span>` : ''}
+      </span>
+      <span class="op-montant" style="color:${isRecette ? '#1F5C46' : '#7A2A1C'}">${isRecette ? '+' : '-'}${formatEUR(f.montant)}</span>
+      <button class="mini-btn" onclick="deleteFixe('${f.id}')">&#128465;</button>
+    </li>
+  `;
+  }).join("");
+}
+
+Object.assign(window, {
+  startEditSolde, saveSolde, toggleDraftCoche, setOpType, setFixeType, resetOpDraft, handleAddOp,
+  setFilter, showMoreRecap, toggleOpCoche, startEditOp, deleteOp,
+  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
+});
+
+document.getElementById("op-date").value = todayISO();
+initFirebaseSync();
+
+["op-date", "op-libelle", "op-montant"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); handleAddOp(); }
+  });
+});
+["fixe-libelle", "fixe-montant", "fixe-jour"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); handleAddFixe(); }
+  });
+});
+</script>
+
+</body>
+</html>
