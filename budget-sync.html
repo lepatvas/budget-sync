@@ -352,7 +352,7 @@
   <!-- Grand panneau récapitulatif -->
   <div class="recap-panel">
     <span class="recap-title">Récapitulatif des dernières opérations</span>
-    <span class="recap-hint">Cochez pour indiquer qu'une opération est passée en banque</span>
+    <span class="recap-hint">Chaque opération compte immédiatement dans le solde réel. La coche sert juste à pointer qu'elle est bien passée en banque</span>
     <div class="recap-filters">
       <button class="filter-btn active" id="filter-toutes" onclick="setFilter('toutes')">Toutes</button>
       <button class="filter-btn" id="filter-attente" onclick="setFilter('attente')">En attente</button>
@@ -364,7 +364,7 @@
   <!-- Opérations récurrentes (dépenses ET rentrées fixes) -->
   <div class="fixes-box">
     <span class="fixes-title">Opérations récurrentes</span>
-    <span class="fixes-hint">Eau, assurance, loyer... mais aussi salaire, allocations : à saisir une fois, sans les réécrire chaque mois</span>
+    <span class="fixes-hint">Eau, assurance, loyer, salaire, retraite... Appliquées automatiquement au Solde Banque à chaque nouveau mois. La coche sert juste à pointer qu'elles sont bien passées en banque</span>
     <div class="entry-labels-row">
       <span class="entry-label" style="flex:1.4">Libellé</span>
       <span class="entry-label" style="flex:0.9">Montant</span>
@@ -381,7 +381,7 @@
       <input type="number" id="fixe-jour" class="entry-input" style="width:40px" min="1" max="31" placeholder="Jr">
     </div>
     <div class="entry-row">
-      <span class="entry-label" style="align-self:center">Réglé ce mois-ci</span>
+      <span class="entry-label" style="align-self:center">Pointée en banque</span>
       <button class="checkbox" id="fixe-coche" onclick="toggleDraftCoche('fixe')">&#10003;</button>
     </div>
     <div class="entry-actions">
@@ -418,7 +418,7 @@ const firebaseConfig = {
 const FIREBASE_ENABLED = firebaseConfig.apiKey !== "VOTRE_API_KEY";
 
 const STORAGE_KEY = "budget-app-data-v1";
-let data = { soldeBancaire: 0, transactions: [], depensesFixes: [] };
+let data = { soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null };
 let editOpId = null;
 let editFixeId = null;
 let opType = "depense";
@@ -476,8 +476,28 @@ function showMoreRecap() {
 function loadFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [] }, JSON.parse(raw));
+    if (raw) data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null }, JSON.parse(raw));
   } catch (e) { /* pas de donnees existantes */ }
+}
+
+function currentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function applyRecurringIfNewMonth() {
+  const nowKey = currentMonthKey();
+  if (!data.lastAppliedMonth) {
+    // premier lancement : on ne rejoue rien, on prend juste le mois en cours comme référence
+    data.lastAppliedMonth = nowKey;
+    return false;
+  }
+  if (data.lastAppliedMonth === nowKey) return false;
+  const total = data.depensesFixes.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
+  data.soldeBancaire = Number(data.soldeBancaire) + total;
+  data.depensesFixes = data.depensesFixes.map(f => ({ ...f, coche: false }));
+  data.lastAppliedMonth = nowKey;
+  return true;
 }
 
 function saveToLocalStorage() {
@@ -485,7 +505,11 @@ function saveToLocalStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     document.getElementById("error-banner").style.display = "none";
   } catch (e) {
-    document.getElementById("error-banner").style.display = "flex";
+    // Le cache local a échoué (WebView restreint, mode privé...).
+    // Ce n'est pas grave si Firebase est actif : la donnée est déjà en sécurité dans le cloud.
+    if (!FIREBASE_ENABLED || !dbRef) {
+      document.getElementById("error-banner").style.display = "flex";
+    }
   }
 }
 
@@ -502,6 +526,8 @@ function save() {
 async function initFirebaseSync() {
   if (!FIREBASE_ENABLED) {
     loadFromLocalStorage();
+    const changed = applyRecurringIfNewMonth();
+    if (changed) saveToLocalStorage();
     setSyncStatus("offline", "Hors ligne (config Firebase manquante)");
     render();
     return;
@@ -516,10 +542,12 @@ async function initFirebaseSync() {
     onValue(dbRef, (snapshot) => {
       const remote = snapshot.val();
       if (remote) {
-        data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [] }, remote);
-        saveToLocalStorage();
+        data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null }, remote);
+        const changed = applyRecurringIfNewMonth();
+        if (changed) { save(); } else { saveToLocalStorage(); }
       } else {
         loadFromLocalStorage();
+        applyRecurringIfNewMonth();
         set(dbRef, data);
       }
       setSyncStatus("syncing", "Synchronise entre vos appareils");
@@ -677,11 +705,8 @@ function toggleFixeCoche(id) {
 function render() {
   document.getElementById("solde-value").textContent = formatEUR(data.soldeBancaire);
 
-  const transNonCochees = data.transactions.filter(t => !t.coche);
-  const fixesNonCochees = data.depensesFixes.filter(f => !f.coche);
-  const impactTrans = transNonCochees.reduce((s, t) => s + Number(t.montant), 0);
-  const impactFixes = fixesNonCochees.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
-  const soldeReel = Number(data.soldeBancaire) + impactTrans + impactFixes;
+  const impactTrans = data.transactions.reduce((s, t) => s + Number(t.montant), 0);
+  const soldeReel = Number(data.soldeBancaire) + impactTrans;
 
   document.getElementById("solde-reel-value").textContent = formatEUR(soldeReel);
   document.getElementById("solde-reel-box").style.background = soldeReel >= 0 ? "#1F5C46" : "#7A2A1C";
