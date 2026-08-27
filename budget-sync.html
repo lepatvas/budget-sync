@@ -295,6 +295,11 @@
     font-weight: 600;
     cursor: pointer;
   }
+  .apply-now-confirm { display: flex; flex-direction: column; gap: 8px; }
+  .apply-now-confirm-text { font-size: 12px; color: #3D3B34; font-weight: 600; }
+  .apply-now-confirm-actions { display: flex; gap: 8px; }
+  .apply-now-confirm-actions .apply-now-btn { flex: 1; }
+  .apply-now-confirm-actions .btn-cancel { flex: 1; justify-content: center; }
   .solde-reel-box {
     align-self: center;
     border-radius: 14px;
@@ -410,7 +415,16 @@
     <ul class="op-list" id="fixe-list"></ul>
     <div class="apply-now-row">
       <span class="apply-now-info" id="apply-now-info"></span>
-      <button class="apply-now-btn" id="apply-now-btn" onclick="applyRecurringNow()">Appliquer maintenant au Solde Banque</button>
+      <div id="apply-now-default">
+        <button class="apply-now-btn" id="apply-now-btn" onclick="startApplyRecurring()">Appliquer maintenant au Solde Banque</button>
+      </div>
+      <div id="apply-now-confirm" class="apply-now-confirm" style="display:none;">
+        <span id="apply-now-confirm-text" class="apply-now-confirm-text"></span>
+        <div class="apply-now-confirm-actions">
+          <button class="btn-cancel active" onclick="cancelApplyRecurring()">&#10005; Annuler</button>
+          <button class="apply-now-btn" onclick="confirmApplyRecurring()">&#10003; Confirmer</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -523,15 +537,26 @@ function applyRecurringIfNewMonth() {
   return true;
 }
 
-function applyRecurringNow() {
+function startApplyRecurring() {
   if (data.depensesFixes.length === 0) return;
   const total = data.depensesFixes.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
-  const confirmMsg = `Appliquer ${formatEUR(total)} au Solde Banque maintenant, et remettre les coches à zéro pour ce mois ?`;
-  if (!window.confirm(confirmMsg)) return;
+  document.getElementById("apply-now-confirm-text").textContent = `Appliquer ${total >= 0 ? "+" : ""}${formatEUR(total)} au Solde Banque et remettre les coches à zéro ?`;
+  document.getElementById("apply-now-default").style.display = "none";
+  document.getElementById("apply-now-confirm").style.display = "flex";
+}
+
+function cancelApplyRecurring() {
+  document.getElementById("apply-now-default").style.display = "block";
+  document.getElementById("apply-now-confirm").style.display = "none";
+}
+
+function confirmApplyRecurring() {
+  const total = data.depensesFixes.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
   data.soldeBancaire = Number(data.soldeBancaire) + total;
   data.depensesFixes = data.depensesFixes.map(f => ({ ...f, coche: false }));
   data.lastAppliedMonth = currentMonthKey();
   save();
+  cancelApplyRecurring();
   render();
 }
 
@@ -799,7 +824,8 @@ function render() {
 Object.assign(window, {
   startEditSolde, saveSolde, toggleDraftCoche, setOpType, setFixeType, resetOpDraft, handleAddOp,
   setFilter, showMoreRecap, toggleOpCoche, startEditOp, deleteOp,
-  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe, applyRecurringNow,
+  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
+  startApplyRecurring, cancelApplyRecurring, confirmApplyRecurring,
 });
 
 document.getElementById("op-date").value = todayISO();
@@ -819,4 +845,3 @@ initFirebaseSync();
 
 </body>
 </html>
-
