@@ -276,6 +276,25 @@
   .op-libelle { font-size: 12.5px; color: #3D3B34; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fixe-jour { font-size: 10.5px; color: #9A9890; margin-left: auto; padding-right: 4px; }
   .op-montant { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .apply-now-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px dashed #DEDACD;
+  }
+  .apply-now-info { font-size: 10.5px; color: #9A9890; }
+  .apply-now-btn {
+    background: #1E2A26;
+    color: #F6F4EF;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
   .solde-reel-box {
     align-self: center;
     border-radius: 14px;
@@ -389,6 +408,10 @@
       <button class="btn-add" id="fixe-submit" onclick="handleAddFixe()">+ Ajouter l'opération récurrente</button>
     </div>
     <ul class="op-list" id="fixe-list"></ul>
+    <div class="apply-now-row">
+      <span class="apply-now-info" id="apply-now-info"></span>
+      <button class="apply-now-btn" id="apply-now-btn" onclick="applyRecurringNow()">Appliquer maintenant au Solde Banque</button>
+    </div>
   </div>
 
   <!-- Solde Reel -->
@@ -498,6 +521,18 @@ function applyRecurringIfNewMonth() {
   data.depensesFixes = data.depensesFixes.map(f => ({ ...f, coche: false }));
   data.lastAppliedMonth = nowKey;
   return true;
+}
+
+function applyRecurringNow() {
+  if (data.depensesFixes.length === 0) return;
+  const total = data.depensesFixes.reduce((s, f) => s + ((f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant))), 0);
+  const confirmMsg = `Appliquer ${formatEUR(total)} au Solde Banque maintenant, et remettre les coches à zéro pour ce mois ?`;
+  if (!window.confirm(confirmMsg)) return;
+  data.soldeBancaire = Number(data.soldeBancaire) + total;
+  data.depensesFixes = data.depensesFixes.map(f => ({ ...f, coche: false }));
+  data.lastAppliedMonth = currentMonthKey();
+  save();
+  render();
 }
 
 function saveToLocalStorage() {
@@ -752,12 +787,19 @@ function render() {
     </li>
   `;
   }).join("");
+
+  const infoEl = document.getElementById("apply-now-info");
+  if (infoEl) {
+    infoEl.textContent = data.lastAppliedMonth
+      ? `Dernier calcul automatique appliqué : ${data.lastAppliedMonth}`
+      : "Pas encore de calcul automatique appliqué";
+  }
 }
 
 Object.assign(window, {
   startEditSolde, saveSolde, toggleDraftCoche, setOpType, setFixeType, resetOpDraft, handleAddOp,
   setFilter, showMoreRecap, toggleOpCoche, startEditOp, deleteOp,
-  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
+  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe, applyRecurringNow,
 });
 
 document.getElementById("op-date").value = todayISO();
