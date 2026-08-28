@@ -388,7 +388,7 @@
   <!-- Opérations récurrentes (dépenses ET rentrées fixes) -->
   <div class="fixes-box">
     <span class="fixes-title">Opérations récurrentes</span>
-    <span class="fixes-hint">Dépenses fixes (eau, assurance, loyer...) : déduites automatiquement du Solde Banque le 1er de chaque mois. Rentrées fixes (salaire, retraite...) : affichées pour information, sans effet sur les calculs. La coche sert juste à pointer qu'une opération est bien passée en banque</span>
+    <span class="fixes-hint">Dépenses déduites du Solde Banque le 1er du mois. Rentrées = information seule. Coche = pointage</span>
     <div class="entry-labels-row">
       <span class="entry-label" style="flex:1.4">Libellé</span>
       <span class="entry-label" style="flex:0.9">Montant</span>
@@ -453,6 +453,8 @@ let fixeType = "depense";
 let recapFilter = "toutes";
 let recapVisibleCount = 15;
 const RECAP_PAGE_SIZE = 15;
+let fixesVisibleCount = 6;
+const FIXES_PAGE_SIZE = 6;
 let dbRef = null;
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -497,6 +499,11 @@ function setFilter(f) {
 
 function showMoreRecap() {
   recapVisibleCount += RECAP_PAGE_SIZE;
+  render();
+}
+
+function showMoreFixes() {
+  fixesVisibleCount += FIXES_PAGE_SIZE;
   render();
 }
 
@@ -767,7 +774,9 @@ function render() {
 
   const fixesTriees = [...data.depensesFixes].sort((a, b) => (a.jour || 0) - (b.jour || 0));
   const fixeListEl = document.getElementById("fixe-list");
-  fixeListEl.innerHTML = fixesTriees.map(f => {
+  const fixesVisibles = fixesTriees.slice(0, fixesVisibleCount);
+  const fixesReste = fixesTriees.length - fixesVisibles.length;
+  fixeListEl.innerHTML = fixesVisibles.map(f => {
     const isRecette = f.type === "recette";
     return `
     <li class="op-row">
@@ -780,7 +789,7 @@ function render() {
       <button class="mini-btn" onclick="deleteFixe('${f.id}')">&#128465;</button>
     </li>
   `;
-  }).join("");
+  }).join("") + (fixesReste > 0 ? `<button class="show-more-btn" onclick="showMoreFixes()">Voir ${Math.min(fixesReste, FIXES_PAGE_SIZE)} de plus (${fixesReste} restantes)</button>` : '');
 
   const infoEl = document.getElementById("apply-now-info");
   if (infoEl) {
@@ -792,7 +801,7 @@ function render() {
 
 Object.assign(window, {
   startEditSolde, saveSolde, toggleDraftCoche, setOpType, setFixeType, resetOpDraft, handleAddOp,
-  setFilter, showMoreRecap, toggleOpCoche, startEditOp, deleteOp,
+  setFilter, showMoreRecap, showMoreFixes, toggleOpCoche, startEditOp, deleteOp,
   resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
 });
 
