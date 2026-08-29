@@ -224,6 +224,7 @@
   .recap-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
   .recap-title { font-size: 12px; font-weight: 600; color: #6B6A63; }
   .recap-filters { display: flex; gap: 4px; }
+  .recap-header-actions { display: flex; gap: 6px; }
   .search-toggle-btn {
     background: transparent;
     border: 1px solid #DEDACD;
@@ -235,6 +236,7 @@
     color: #6B6A63;
     flex-shrink: 0;
   }
+  .print-menu { display: flex; gap: 6px; margin-bottom: 8px; }
   .search-input { margin-bottom: 8px; }
   .fixes-section { display: flex; flex-direction: column; gap: 6px; }
   .filter-btn {
@@ -349,6 +351,25 @@
   }
   .support-link:hover { color: #6B6A63; border-color: #C9C6B8; }
   input[type="date"], input[type="number"] { font-family: inherit; }
+  .print-area { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    #print-area h2 { font-size: 18px; margin-bottom: 4px; }
+    #print-area p { font-size: 12px; color: #555; margin-bottom: 12px; }
+    #print-area table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #print-area th, #print-area td { border-bottom: 1px solid #ccc; padding: 5px 6px; text-align: left; }
+    #print-area th:last-child, #print-area td:last-child { text-align: center; }
+  }
 </style>
 </head>
 <body>
@@ -395,7 +416,14 @@
   <div class="recap-panel">
     <div class="recap-header-row">
       <span class="recap-title">Opérations en cours</span>
-      <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Rechercher">&#128269;</button>
+      <div class="recap-header-actions">
+        <button class="search-toggle-btn" id="print-toggle-btn" onclick="togglePrintMenu()" title="Imprimer / PDF">&#128424;</button>
+        <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Rechercher">&#128269;</button>
+      </div>
+    </div>
+    <div class="print-menu" id="print-menu" style="display:none;">
+      <button class="filter-btn" onclick="printOperations('last50')">50 dernières</button>
+      <button class="filter-btn" onclick="printOperations('month')">Mois en cours</button>
     </div>
     <div class="recap-header-row">
       <div class="recap-filters">
@@ -409,9 +437,9 @@
   </div>
 
   <!-- Opérations récurrentes (secondaire, repliée) -->
-  <button class="add-toggle-btn" id="fixes-section-toggle-btn" onclick="toggleFixesSection()">&#9662; Charges Fixes</button>
+  <button class="add-toggle-btn" id="fixes-section-toggle-btn" onclick="toggleFixesSection()">&#9662; Opérations récurrentes</button>
   <div class="fixes-section" id="fixes-section" style="display:none;">
-    <button class="add-toggle-btn" id="fixe-toggle-btn" onclick="toggleAddFixe()">+ Ajouter une opération </button>
+    <button class="add-toggle-btn" id="fixe-toggle-btn" onclick="toggleAddFixe()">+ Ajouter une opération récurrente</button>
     <div class="add-form" id="fixe-form" style="display:none;">
       <div class="entry-row">
         <input type="text" id="fixe-libelle" class="entry-input" style="flex:1.4" placeholder="Libellé">
@@ -444,6 +472,8 @@
     ☕ Soutenir ce projet
   </a>
 </div>
+
+<div id="print-area" class="print-area"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -553,6 +583,44 @@ function onSearchInput(value) {
   recapSearchQuery = value.trim().toLowerCase();
   recapVisibleCount = RECAP_PAGE_SIZE;
   render();
+}
+
+function togglePrintMenu() {
+  const menu = document.getElementById("print-menu");
+  menu.style.display = menu.style.display === "none" ? "flex" : "none";
+}
+
+function printOperations(mode) {
+  let ops = [...data.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
+  let title = "";
+  if (mode === "last50") {
+    ops = ops.slice(0, 50);
+    title = "50 dernières opérations";
+  } else {
+    const nowKey = currentMonthKey();
+    ops = ops.filter(t => t.date.slice(0, 7) === nowKey);
+    title = `Opérations du mois (${nowKey})`;
+  }
+
+  const rows = ops.map(t => `
+    <tr>
+      <td>${formatDateFR(t.date)}</td>
+      <td>${escapeHtml(t.libelle)}</td>
+      <td style="text-align:right;color:${t.montant >= 0 ? '#1F5C46' : '#7A2A1C'}">${t.montant >= 0 ? '+' : ''}${formatEUR(t.montant)}</td>
+      <td>${t.coche ? 'Oui' : 'Non'}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("print-area").innerHTML = `
+    <h2>${title}</h2>
+    <p>Solde Banque : ${formatEUR(data.soldeBancaire)} — édité le ${new Date().toLocaleDateString("fr-FR")}</p>
+    <table>
+      <thead><tr><th>Date</th><th>Libellé</th><th>Montant</th><th>En banque</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4">Aucune opération</td></tr>'}</tbody>
+    </table>
+  `;
+  document.getElementById("print-menu").style.display = "none";
+  window.print();
 }
 
 function showMoreRecap() {
@@ -864,6 +932,7 @@ Object.assign(window, {
   setFilter, showMoreRecap, showMoreFixes, toggleOpCoche, startEditOp, deleteOp,
   resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
   toggleAddOp, toggleAddFixe, toggleFixesSection, toggleSearch, onSearchInput,
+  togglePrintMenu, printOperations,
 });
 
 document.getElementById("op-date").value = todayISO();
