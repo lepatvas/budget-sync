@@ -239,6 +239,18 @@
   .print-menu { display: flex; gap: 6px; margin-bottom: 8px; }
   .search-input { margin-bottom: 8px; }
   .fixes-section { display: flex; flex-direction: column; gap: 6px; }
+  .fixes-bulk-actions { display: flex; gap: 6px; margin-bottom: 6px; }
+  .bulk-btn {
+    flex: 1;
+    background: #EFECE1;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B6A63;
+    cursor: pointer;
+  }
   .filter-btn {
     border: 1px solid #DEDACD;
     background: #FFFFFF;
@@ -456,6 +468,10 @@
       </div>
     </div>
     <div class="fixes-box">
+      <div class="fixes-bulk-actions">
+        <button class="bulk-btn" onclick="checkAllFixes()">&#10003; Tout cocher</button>
+        <button class="bulk-btn" onclick="uncheckAllFixes()">&#10005; Tout décocher</button>
+      </div>
       <ul class="op-list" id="fixe-list"></ul>
       <span class="apply-now-info" id="apply-now-info"></span>
     </div>
@@ -645,18 +661,14 @@ function currentMonthKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function applyRecurringIfNewMonth() {
+function resetFixesCocheIfNewMonth() {
   const nowKey = currentMonthKey();
   if (!data.lastAppliedMonth) {
-    // premier lancement : on ne rejoue rien, on prend juste le mois en cours comme référence
+    // premier lancement : on prend juste le mois en cours comme référence
     data.lastAppliedMonth = nowKey;
     return false;
   }
   if (data.lastAppliedMonth === nowKey) return false;
-  const totalDepenses = data.depensesFixes
-    .filter(f => f.type !== "recette")
-    .reduce((s, f) => s + Math.abs(Number(f.montant)), 0);
-  data.soldeBancaire = Number(data.soldeBancaire) - totalDepenses;
   data.depensesFixes = data.depensesFixes.map(f => ({ ...f, coche: false }));
   data.lastAppliedMonth = nowKey;
   return true;
@@ -688,7 +700,7 @@ function save() {
 async function initFirebaseSync() {
   if (!FIREBASE_ENABLED) {
     loadFromLocalStorage();
-    const changed = applyRecurringIfNewMonth();
+    const changed = resetFixesCocheIfNewMonth();
     if (changed) saveToLocalStorage();
     setSyncStatus("offline", "Hors ligne (config Firebase manquante)");
     render();
@@ -705,11 +717,11 @@ async function initFirebaseSync() {
       const remote = snapshot.val();
       if (remote) {
         data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null }, remote);
-        const changed = applyRecurringIfNewMonth();
+        const changed = resetFixesCocheIfNewMonth();
         if (changed) { save(); } else { saveToLocalStorage(); }
       } else {
         loadFromLocalStorage();
-        applyRecurringIfNewMonth();
+        resetFixesCocheIfNewMonth();
         set(dbRef, data);
       }
       setSyncStatus("syncing", "Synchronise entre vos appareils");
@@ -860,7 +872,43 @@ function deleteFixe(id) {
 
 function toggleFixeCoche(id) {
   const f = data.depensesFixes.find(x => x.id === id);
-  if (f) f.coche = !f.coche;
+  if (!f) return;
+  const wasChecked = f.coche;
+  f.coche = !f.coche;
+  const signedAmount = (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
+  if (f.coche && !wasChecked) {
+    // vient d'être cochée : elle est passée en banque, on l'applique au Solde Banque
+    data.soldeBancaire = Number(data.soldeBancaire) + signedAmount;
+  } else if (!f.coche && wasChecked) {
+    // vient d'être décochée : on annule l'application précédente
+    data.soldeBancaire = Number(data.soldeBancaire) - signedAmount;
+  }
+  save();
+  render();
+}
+
+function checkAllFixes() {
+  let total = 0;
+  data.depensesFixes.forEach(f => {
+    if (!f.coche) {
+      total += (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
+      f.coche = true;
+    }
+  });
+  data.soldeBancaire = Number(data.soldeBancaire) + total;
+  save();
+  render();
+}
+
+function uncheckAllFixes() {
+  let total = 0;
+  data.depensesFixes.forEach(f => {
+    if (f.coche) {
+      total += (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
+      f.coche = false;
+    }
+  });
+  data.soldeBancaire = Number(data.soldeBancaire) - total;
   save();
   render();
 }
@@ -921,9 +969,7 @@ function render() {
 
   const infoEl = document.getElementById("apply-now-info");
   if (infoEl) {
-    infoEl.textContent = data.lastAppliedMonth
-      ? `Dernier calcul automatique appliqué : ${data.lastAppliedMonth}`
-      : "Pas encore de calcul automatique appliqué";
+    infoEl.textContent = "Cochez une opération quand elle passe en banque pour l'appliquer au Solde Banque. Les cases sont remises à zéro chaque 1er du mois.";
   }
 }
 
@@ -932,7 +978,7 @@ Object.assign(window, {
   setFilter, showMoreRecap, showMoreFixes, toggleOpCoche, startEditOp, deleteOp,
   resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
   toggleAddOp, toggleAddFixe, toggleFixesSection, toggleSearch, onSearchInput,
-  togglePrintMenu, printOperations,
+  togglePrintMenu, printOperations, checkAllFixes, uncheckAllFixes,
 });
 
 document.getElementById("op-date").value = todayISO();
