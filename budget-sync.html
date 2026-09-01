@@ -873,42 +873,19 @@ function deleteFixe(id) {
 function toggleFixeCoche(id) {
   const f = data.depensesFixes.find(x => x.id === id);
   if (!f) return;
-  const wasChecked = f.coche;
   f.coche = !f.coche;
-  const signedAmount = (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
-  if (f.coche && !wasChecked) {
-    // vient d'être cochée : elle est passée en banque, on l'applique au Solde Banque
-    data.soldeBancaire = Number(data.soldeBancaire) + signedAmount;
-  } else if (!f.coche && wasChecked) {
-    // vient d'être décochée : on annule l'application précédente
-    data.soldeBancaire = Number(data.soldeBancaire) - signedAmount;
-  }
   save();
   render();
 }
 
 function checkAllFixes() {
-  let total = 0;
-  data.depensesFixes.forEach(f => {
-    if (!f.coche) {
-      total += (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
-      f.coche = true;
-    }
-  });
-  data.soldeBancaire = Number(data.soldeBancaire) + total;
+  data.depensesFixes.forEach(f => { f.coche = true; });
   save();
   render();
 }
 
 function uncheckAllFixes() {
-  let total = 0;
-  data.depensesFixes.forEach(f => {
-    if (f.coche) {
-      total += (f.type === "recette" ? 1 : -1) * Math.abs(Number(f.montant));
-      f.coche = false;
-    }
-  });
-  data.soldeBancaire = Number(data.soldeBancaire) - total;
+  data.depensesFixes.forEach(f => { f.coche = false; });
   save();
   render();
 }
@@ -917,7 +894,10 @@ function render() {
   document.getElementById("solde-value").textContent = formatEUR(data.soldeBancaire);
 
   const impactTrans = data.transactions.reduce((s, t) => s + Number(t.montant), 0);
-  const soldeReel = Number(data.soldeBancaire) + impactTrans;
+  const impactFixesCochees = data.depensesFixes
+    .filter(f => f.coche && f.type !== "recette")
+    .reduce((s, f) => s - Math.abs(Number(f.montant)), 0);
+  const soldeReel = Number(data.soldeBancaire) + impactTrans + impactFixesCochees;
 
   document.getElementById("solde-reel-value").textContent = formatEUR(soldeReel);
   document.getElementById("solde-reel-box").style.background = soldeReel >= 0 ? "#1F5C46" : "#7A2A1C";
@@ -969,7 +949,7 @@ function render() {
 
   const infoEl = document.getElementById("apply-now-info");
   if (infoEl) {
-    infoEl.textContent = "Cochez une opération quand elle passe en banque pour l'appliquer au Solde Banque. Les cases sont remises à zéro chaque 1er du mois.";
+    infoEl.textContent = "Le Solde Banque reste 100% manuel. Cochez une dépense pour la déduire du Solde Réel (les rentrées sont juste indicatives). Cases remises à zéro chaque 1er du mois.";
   }
 }
 
