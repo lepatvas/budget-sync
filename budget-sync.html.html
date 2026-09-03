@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<!-- saved from url=(0055)https://lepatvas.github.io/budget-sync/budget-sync.html -->
+<html lang="fr" class=" plmqkyznp idc0_350"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mon Budget</title>
+<link rel="manifest" href="https://lepatvas.github.io/budget-sync/manifest.json">
+<meta name="theme-color" content="#1E2A26">
+<link rel="icon" href="https://lepatvas.github.io/budget-sync/icon-192.png">
+<link rel="apple-touch-icon" href="https://lepatvas.github.io/budget-sync/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #E9E6DC;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px 10px 60px;
+  }
+  .phone {
+    width: 100%;
+    max-width: 420px;
+    background: #F6F4EF;
+    border-radius: 20px;
+    border: 1px solid #DEDACD;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .error-banner {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #7A2A1C;
+    color: #F9E6E1;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .sync-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    align-self: center;
+  }
+  .sync-banner.syncing { background: #D9EBE2; color: #1F5C46; }
+  .sync-banner.offline { background: #EFEAD8; color: #8A6B1F; }
+  .sync-banner .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .balance-card {
+    background: #1E2A26;
+    border-radius: 12px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+  .balance-card-reel { background: #1F5C46; }
+  .balance-label {
+    color: #C9C6B8;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .solde-banque-value-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    cursor: pointer;
+  }
+  .balance-value {
+    color: #F6F4EF;
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .pencil { color: #9A9890; font-size: 11px; }
+  .edit-solde-row { display: none; align-items: center; gap: 5px; margin-top: 2px; }
+  .edit-solde-row.active { display: flex; }
+  .solde-banque-value-row.hidden { display: none; }
+  #solde-input {
+    width: 100px;
+    background: #F6F4EF;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E2A26;
+    text-align: center;
+  }
+  .small-check-btn {
+    background: #1F5C46;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 7px;
+    color: #F6F4EF;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .entry-labels-row { display: flex; gap: 6px; padding: 0 2px; }
+  .entry-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #9A9890;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .entry-row { display: flex; gap: 6px; align-items: center; }
+  .entry-input {
+    min-width: 0;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 8px 9px;
+    font-size: 12.5px;
+    background: #FFFFFF;
+    color: #1E2A26;
+    width: 100%;
+  }
+  .entry-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .add-toggle-btn {
+    width: 100%;
+    background: #EFECE1;
+    border: 1px dashed #C9C6B8;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B6A63;
+    cursor: pointer;
+    text-align: center;
+  }
+  .add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #EFECE1;
+    border-radius: 10px;
+    padding: 8px;
+  }
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #1F5C46;
+    color: #F6F4EF;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #6B6A63;
+    cursor: pointer;
+  }
+  .btn-cancel.active { display: flex; }
+  .checkbox {
+    width: 30px;
+    height: 34px;
+    min-width: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #C9C6B8;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #F6F4EF;
+  }
+  .checkbox.on { background: #1F5C46; border-color: #1F5C46; }
+  .type-toggle {
+    display: flex;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 62px;
+  }
+  .type-btn {
+    flex: 1;
+    border: none;
+    background: #FFFFFF;
+    color: #9A9890;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 8px 0;
+    cursor: pointer;
+  }
+  .type-btn.depense.active { background: #F3DED8; color: #7A2A1C; }
+  .type-btn.recette.active { background: #D9EBE2; color: #1F5C46; }
+  .type-btn + .type-btn { border-left: 1px solid #DEDACD; }
+  .recap-panel {
+    background: #FFFFFF;
+    border: 1px solid #DEDACD;
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-height: 90px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .recap-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .recap-title { font-size: 12px; font-weight: 600; color: #6B6A63; }
+  .recap-filters { display: flex; gap: 4px; }
+  .recap-header-actions { display: flex; gap: 6px; }
+  .search-toggle-btn {
+    background: transparent;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #6B6A63;
+    flex-shrink: 0;
+  }
+  .print-menu { display: flex; gap: 6px; margin-bottom: 8px; }
+  .search-input { margin-bottom: 8px; }
+  .fixes-section { display: flex; flex-direction: column; gap: 6px; }
+  .fixes-bulk-actions { display: flex; gap: 6px; margin-bottom: 6px; }
+  .bulk-btn {
+    flex: 1;
+    background: #EFECE1;
+    border: 1px solid #DEDACD;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B6A63;
+    cursor: pointer;
+  }
+  .filter-btn {
+    border: 1px solid #DEDACD;
+    background: #FFFFFF;
+    color: #9A9890;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .filter-btn.active { background: #1E2A26; color: #F6F4EF; border-color: #1E2A26; }
+  .show-more-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px dashed #DEDACD;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B6A63;
+    cursor: pointer;
+  }
+  .empty-text { font-size: 12.5px; color: #B3B1A7; padding: 10px 0; }
+  .recap-list { list-style: none; margin: 0; padding: 0; }
+  .recap-row {
+    display: grid;
+    grid-template-columns: 38px 1fr auto 24px 46px;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 0;
+    border-bottom: 1px solid #F0EDE2;
+    font-size: 12.5px;
+  }
+  .recap-date { color: #9A9890; font-size: 11px; }
+  .recap-libelle { color: #3D3B34; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recap-montant { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .recap-coche-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1.5px solid #C9C6B8;
+    background: #FFFFFF;
+    cursor: pointer;
+    padding: 0;
+    color: #F6F4EF;
+    font-size: 12px;
+    margin: 0 auto;
+  }
+  .recap-coche-btn.on { background: #1F5C46; border-color: #1F5C46; }
+  .recap-row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+  .mini-btn { background: transparent; border: none; padding: 3px; cursor: pointer; font-size: 12px; color: #9A9890; }
+  .fixes-box {
+    background: #EFECE1;
+    border: 1px solid #DEDACD;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fixes-title { font-size: 12.5px; font-weight: 600; color: #6B6A63; }
+  .fixes-hint { font-size: 10.5px; color: #9A9890; margin-top: -4px; }
+  .op-list { list-style: none; margin: 4px 0 0; padding: 0; }
+  .op-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #E4E0D3; }
+  .op-main { flex: 1; display: flex; align-items: center; gap: 6px; overflow: hidden; cursor: pointer; }
+  .op-libelle { font-size: 12.5px; color: #3D3B34; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fixe-jour { font-size: 10.5px; color: #9A9890; margin-left: auto; padding-right: 4px; }
+  .op-montant { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .apply-now-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px dashed #DEDACD;
+  }
+  .apply-now-info { font-size: 10.5px; color: #9A9890; }
+  .apply-now-btn {
+    background: #1E2A26;
+    color: #F6F4EF;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .apply-now-confirm { display: flex; flex-direction: column; gap: 8px; }
+  .apply-now-confirm-text { font-size: 12px; color: #3D3B34; font-weight: 600; }
+  .apply-now-confirm-actions { display: flex; gap: 8px; }
+  .apply-now-confirm-actions .apply-now-btn { flex: 1; }
+  .apply-now-confirm-actions .btn-cancel { flex: 1; justify-content: center; }
+  .support-link {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #9A9890;
+    font-size: 11.5px;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #DEDACD;
+    margin-top: -2px;
+  }
+  .support-link:hover { color: #6B6A63; border-color: #C9C6B8; }
+  input[type="date"], input[type="number"] { font-family: inherit; }
+  .print-area { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    #print-area h2 { font-size: 18px; margin-bottom: 4px; }
+    #print-area p { font-size: 12px; color: #555; margin-bottom: 12px; }
+    #print-area table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #print-area th, #print-area td { border-bottom: 1px solid #ccc; padding: 5px 6px; text-align: left; }
+    #print-area th:last-child, #print-area td:last-child { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="error-banner" id="error-banner" style="display: none;">Sauvegarde impossible sur cet appareil.</div>
+  <div class="sync-banner syncing" id="sync-banner"><span class="dot"></span><span id="sync-text">Synchronise entre vos appareils</span></div>
+
+  <!-- Solde Banque -->
+  <div class="balance-card">
+    <span class="balance-label">Solde Banque</span>
+    <div class="solde-banque-value-row" id="solde-display" onclick="startEditSolde()">
+      <span class="balance-value" id="solde-value">2 500,87&nbsp;€</span>
+      <span class="pencil">✎</span>
+    </div>
+    <div class="edit-solde-row" id="solde-edit">
+      <input id="solde-input" inputmode="decimal">
+      <button class="small-check-btn" onclick="saveSolde()">✓</button>
+    </div>
+  </div>
+
+  <!-- Ajout opération (repliable) -->
+  <button class="add-toggle-btn" id="op-toggle-btn" onclick="toggleAddOp()">+ Nouvelle opération</button>
+  <div class="add-form" id="op-form" style="display:none;">
+    <div class="entry-row">
+      <input type="date" id="op-date" class="entry-input" style="flex:1.1">
+      <input type="text" id="op-libelle" class="entry-input" style="flex:2" placeholder="Libellé">
+    </div>
+    <div class="entry-row">
+      <input type="text" id="op-montant" class="entry-input" style="flex:1.5" placeholder="Montant" inputmode="decimal">
+      <div class="type-toggle">
+        <button type="button" class="type-btn depense active" id="op-type-depense" onclick="setOpType(&#39;depense&#39;)">−</button>
+        <button type="button" class="type-btn recette" id="op-type-recette" onclick="setOpType(&#39;recette&#39;)">+</button>
+      </div>
+      <button class="checkbox" id="op-coche" onclick="toggleDraftCoche(&#39;op&#39;)" title="Pointée en banque">✓</button>
+    </div>
+    <div class="entry-actions">
+      <button class="btn-cancel" id="op-cancel" onclick="resetOpDraft()">✕ Annuler</button>
+      <button class="btn-add" id="op-submit" onclick="handleAddOp()">+ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Grand panneau récapitulatif (priorité) -->
+  <div class="recap-panel">
+    <div class="recap-header-row">
+      <span class="recap-title">Opérations en cours</span>
+      <div class="recap-header-actions">
+        <button class="search-toggle-btn" id="print-toggle-btn" onclick="togglePrintMenu()" title="Imprimer / PDF">🖨</button>
+        <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Rechercher">🔍</button>
+      </div>
+    </div>
+    <div class="print-menu" id="print-menu" style="display: none;">
+      <button class="filter-btn" onclick="printOperations(&#39;last50&#39;)">50 dernières</button>
+      <button class="filter-btn" onclick="printOperations(&#39;month&#39;)">Mois en cours</button>
+    </div>
+    <div class="recap-header-row">
+      <div class="recap-filters">
+        <button class="filter-btn active" id="filter-toutes" onclick="setFilter(&#39;toutes&#39;)">Toutes</button>
+        <button class="filter-btn" id="filter-attente" onclick="setFilter(&#39;attente&#39;)">Attente</button>
+        <button class="filter-btn" id="filter-reglees" onclick="setFilter(&#39;reglees&#39;)">Réglées</button>
+      </div>
+    </div>
+    <input type="text" id="search-input" class="entry-input search-input" placeholder="Rechercher un libellé..." style="display:none;" oninput="onSearchInput(this.value)">
+    <div id="recap-content"><ul class="recap-list">
+      <li class="recap-row">
+        <span class="recap-date">03/09</span>
+        <span class="recap-libelle">amazon</span>
+        <span class="recap-montant" style="color:#7A2A1C">-6,59&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtl5reb5bot2g&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtl5reb5bot2g&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtl5reb5bot2g&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">Amazon</span>
+        <span class="recap-montant" style="color:#7A2A1C">-3,49&nbsp;€</span>
+        <button class="recap-coche-btn " title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjujg9h61d8c&#39;)"></button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjujg9h61d8c&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjujg9h61d8c&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">dancharia</span>
+        <span class="recap-montant" style="color:#7A2A1C">-70,47&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjttoo2gwcz4&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjttoo2gwcz4&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjttoo2gwcz4&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">habillement</span>
+        <span class="recap-montant" style="color:#7A2A1C">-15,99&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjtsvuq6gdpx&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjtsvuq6gdpx&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjtsvuq6gdpx&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">biok</span>
+        <span class="recap-montant" style="color:#7A2A1C">-37,10&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjtsak198m6a&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjtsak198m6a&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjtsak198m6a&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">carburant</span>
+        <span class="recap-montant" style="color:#7A2A1C">-45,00&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjtrh999xp7x&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjtrh999xp7x&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjtrh999xp7x&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">02/09</span>
+        <span class="recap-libelle">inter</span>
+        <span class="recap-montant" style="color:#7A2A1C">-29,24&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtjtqzmyc3ynz&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtjtqzmyc3ynz&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtjtqzmyc3ynz&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">01/09</span>
+        <span class="recap-libelle">amazon</span>
+        <span class="recap-montant" style="color:#7A2A1C">-5,99&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtinzmatdsna5&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtinzmatdsna5&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtinzmatdsna5&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">01/09</span>
+        <span class="recap-libelle">aldi</span>
+        <span class="recap-montant" style="color:#7A2A1C">-121,67&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtinyy19smd5v&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtinyy19smd5v&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtinyy19smd5v&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">01/09</span>
+        <span class="recap-libelle">amazon</span>
+        <span class="recap-montant" style="color:#7A2A1C">-15,27&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtinyeie0wtda&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtinyeie0wtda&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtinyeie0wtda&#39;)">🗑</button>
+        </span>
+      </li>
+    
+      <li class="recap-row">
+        <span class="recap-date">01/09</span>
+        <span class="recap-libelle">autoroute</span>
+        <span class="recap-montant" style="color:#7A2A1C">-10,20&nbsp;€</span>
+        <button class="recap-coche-btn on" title="Marquer comme passée en banque" onclick="toggleOpCoche(&#39;mtinwpj2fics3&#39;)">✓</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp(&#39;mtinwpj2fics3&#39;)">✎</button>
+          <button class="mini-btn" onclick="deleteOp(&#39;mtinwpj2fics3&#39;)">🗑</button>
+        </span>
+      </li>
+    </ul></div>
+  </div>
+
+  <!-- Opérations récurrentes (secondaire, repliée) -->
+  <button class="add-toggle-btn" id="fixes-section-toggle-btn" onclick="toggleFixesSection()">▴ Opérations récurrentes</button>
+  <div class="fixes-section" id="fixes-section" style="display: flex;">
+    <button class="add-toggle-btn" id="fixe-toggle-btn" onclick="toggleAddFixe()">+ Ajouter une opération récurrente</button>
+    <div class="add-form" id="fixe-form" style="display:none;">
+      <div class="entry-row">
+        <input type="text" id="fixe-libelle" class="entry-input" style="flex:1.4" placeholder="Libellé">
+        <input type="text" id="fixe-montant" class="entry-input" style="flex:0.9" placeholder="Montant" inputmode="decimal">
+        <div class="type-toggle" style="width:52px">
+          <button type="button" class="type-btn depense active" id="fixe-type-depense" onclick="setFixeType(&#39;depense&#39;)">−</button>
+          <button type="button" class="type-btn recette" id="fixe-type-recette" onclick="setFixeType(&#39;recette&#39;)">+</button>
+        </div>
+        <input type="number" id="fixe-jour" class="entry-input" style="width:40px" min="1" max="31" placeholder="Jr">
+      </div>
+      <div class="entry-actions">
+        <button class="btn-cancel" id="fixe-cancel" onclick="resetFixeDraft()">✕ Annuler</button>
+        <button class="btn-add" id="fixe-submit" onclick="handleAddFixe()">+ Ajouter</button>
+      </div>
+    </div>
+    <div class="fixes-box">
+      <div class="fixes-bulk-actions">
+        <button class="bulk-btn" onclick="checkAllFixes()">✓ Tout cocher</button>
+        <button class="bulk-btn" onclick="uncheckAllFixes()">✕ Tout décocher</button>
+      </div>
+      <ul class="op-list" id="fixe-list">
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtl5ozisa7jzt&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtl5ozisa7jzt&#39;)">
+        <span class="op-libelle">pecul Anne</span>
+        
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-100,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtl5ozisa7jzt&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtl5pp7rdneo5&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtl5pp7rdneo5&#39;)">
+        <span class="op-libelle">pecul Pat</span>
+        
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-100,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtl5pp7rdneo5&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4by2fdo18wm&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4by2fdo18wm&#39;)">
+        <span class="op-libelle">Salaire Anne</span>
+        <span class="fixe-jour">le 1</span>
+      </span>
+      <span class="op-montant" style="color:#1F5C46">+1 774,97&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4by2fdo18wm&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4byshook2gh&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4byshook2gh&#39;)">
+        <span class="op-libelle">Carsat</span>
+        <span class="fixe-jour">le 1</span>
+      </span>
+      <span class="op-montant" style="color:#1F5C46">+186,68&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4byshook2gh&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4bzjiueydr7&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4bzjiueydr7&#39;)">
+        <span class="op-libelle">Retraite</span>
+        <span class="fixe-jour">le 1</span>
+      </span>
+      <span class="op-montant" style="color:#1F5C46">+1 204,86&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4bzjiueydr7&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4c01hke9928&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4c01hke9928&#39;)">
+        <span class="op-libelle">Arcco</span>
+        <span class="fixe-jour">le 1</span>
+      </span>
+      <span class="op-montant" style="color:#1F5C46">+145,47&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4c01hke9928&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcopoe0hae3i&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcopoe0hae3i&#39;)">
+        <span class="op-libelle">LEP Pat</span>
+        <span class="fixe-jour">le 3</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-200,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcopoe0hae3i&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcoq2byu28hf&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcoq2byu28hf&#39;)">
+        <span class="op-libelle">LB Anne</span>
+        <span class="fixe-jour">le 3</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-50,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcoq2byu28hf&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcosi0vkxxpa&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcosi0vkxxpa&#39;)">
+        <span class="op-libelle">LEP Anne</span>
+        <span class="fixe-jour">le 3</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-500,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcosi0vkxxpa&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcoluu5zce82&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcoluu5zce82&#39;)">
+        <span class="op-libelle">Acmn</span>
+        <span class="fixe-jour">le 6</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-4,36&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcoluu5zce82&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcol7e2lrnjw&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcol7e2lrnjw&#39;)">
+        <span class="op-libelle">Eurocompte</span>
+        <span class="fixe-jour">le 7</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-10,80&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcol7e2lrnjw&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcokb14jk9dn&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcokb14jk9dn&#39;)">
+        <span class="op-libelle">Maïf</span>
+        <span class="fixe-jour">le 10</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-41,94&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcokb14jk9dn&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcoextsxf9a3&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcoextsxf9a3&#39;)">
+        <span class="op-libelle">Mabapi</span>
+        <span class="fixe-jour">le 11</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-32,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcoextsxf9a3&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcog7jbiyxbj&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcog7jbiyxbj&#39;)">
+        <span class="op-libelle">Sydec</span>
+        <span class="fixe-jour">le 11</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-38,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcog7jbiyxbj&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4c6ey85cgrh&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4c6ey85cgrh&#39;)">
+        <span class="op-libelle">EDF</span>
+        <span class="fixe-jour">le 12</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-146,74&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4c6ey85cgrh&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcohannbai7g&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcohannbai7g&#39;)">
+        <span class="op-libelle">Ass-Linxe</span>
+        <span class="fixe-jour">le 12</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-33,44&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcohannbai7g&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcojdo2535pa&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcojdo2535pa&#39;)">
+        <span class="op-libelle">MGEN</span>
+        <span class="fixe-jour">le 12</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-185,50&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcojdo2535pa&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4c1jnjsszb0&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4c1jnjsszb0&#39;)">
+        <span class="op-libelle">Taxe Foncière</span>
+        <span class="fixe-jour">le 16</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-99,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4c1jnjsszb0&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4cj52psiyxy&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4cj52psiyxy&#39;)">
+        <span class="op-libelle">Mobile Ant</span>
+        <span class="fixe-jour">le 22</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-6,99&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4cj52psiyxy&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4cku6isq53q&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4cku6isq53q&#39;)">
+        <span class="op-libelle">Mobile Anne</span>
+        <span class="fixe-jour">le 22</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-5,99&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4cku6isq53q&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcondstdg8l8&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcondstdg8l8&#39;)">
+        <span class="op-libelle">Free ADSL</span>
+        <span class="fixe-jour">le 22</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-19,99&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcondstdg8l8&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcook34sqw43&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcook34sqw43&#39;)">
+        <span class="op-libelle">Mobile Pat+Netflix</span>
+        <span class="fixe-jour">le 23</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-16,95&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcook34sqw43&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mt4ce6yrhh4yg&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mt4ce6yrhh4yg&#39;)">
+        <span class="op-libelle">DIAC</span>
+        <span class="fixe-jour">le 25</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-137,61&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mt4ce6yrhh4yg&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcotaqk9geda&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcotaqk9geda&#39;)">
+        <span class="op-libelle">Ass Vie</span>
+        <span class="fixe-jour">le 25</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-30,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcotaqk9geda&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcotswniifn1&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcotswniifn1&#39;)">
+        <span class="op-libelle">Ap Léna</span>
+        <span class="fixe-jour">le 25</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-50,00&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcotswniifn1&#39;)">🗑</button>
+    </li>
+  
+    <li class="op-row">
+      <button class="checkbox on" onclick="toggleFixeCoche(&#39;mtcoi55v8z47g&#39;)">✓</button>
+      <span class="op-main" onclick="startEditFixe(&#39;mtcoi55v8z47g&#39;)">
+        <span class="op-libelle">Ass-Maaf</span>
+        <span class="fixe-jour">le 26</span>
+      </span>
+      <span class="op-montant" style="color:#7A2A1C">-90,70&nbsp;€</span>
+      <button class="mini-btn" onclick="deleteFixe(&#39;mtcoi55v8z47g&#39;)">🗑</button>
+    </li>
+  </ul>
+      <span class="apply-now-info" id="apply-now-info">Le Solde Banque reste 100% manuel. Cochez une dépense pour la déduire du Solde Réel (les rentrées sont juste indicatives). Cases remises à zéro chaque 1er du mois.</span>
+    </div>
+  </div>
+
+  <!-- Solde Reel -->
+  <div class="balance-card balance-card-reel" id="solde-reel-box" style="background: rgb(31, 92, 70);">
+    <span class="balance-label">Solde Réel</span>
+    <span class="balance-value" id="solde-reel-value">239,85&nbsp;€</span>
+  </div>
+
+  <!-- Soutien / don -->
+  <a class="support-link" href="https://paypal.me/VOTRE-PSEUDO-PAYPAL" target="_blank" rel="noopener">
+    ☕ Soutenir ce projet
+  </a>
+</div>
+
+<div id="print-area" class="print-area">
+    <h2>50 dernières opérations</h2>
+    <p>Solde Banque : 2 500,87&nbsp;€ — édité le 03/09/2026</p>
+    <table>
+      <thead><tr><th>Date</th><th>Libellé</th><th>Montant</th><th>En banque</th></tr></thead>
+      <tbody>
+    <tr>
+      <td>03/09</td>
+      <td>amazon</td>
+      <td style="text-align:right;color:#7A2A1C">-6,59&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>Amazon</td>
+      <td style="text-align:right;color:#7A2A1C">-3,49&nbsp;€</td>
+      <td>Non</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>dancharia</td>
+      <td style="text-align:right;color:#7A2A1C">-70,47&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>habillement</td>
+      <td style="text-align:right;color:#7A2A1C">-15,99&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>biok</td>
+      <td style="text-align:right;color:#7A2A1C">-37,10&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>carburant</td>
+      <td style="text-align:right;color:#7A2A1C">-45,00&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>02/09</td>
+      <td>inter</td>
+      <td style="text-align:right;color:#7A2A1C">-29,24&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>01/09</td>
+      <td>amazon</td>
+      <td style="text-align:right;color:#7A2A1C">-5,99&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>01/09</td>
+      <td>aldi</td>
+      <td style="text-align:right;color:#7A2A1C">-121,67&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>01/09</td>
+      <td>amazon</td>
+      <td style="text-align:right;color:#7A2A1C">-15,27&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  
+    <tr>
+      <td>01/09</td>
+      <td>autoroute</td>
+      <td style="text-align:right;color:#7A2A1C">-10,20&nbsp;€</td>
+      <td>Oui</td>
+    </tr>
+  </tbody>
+    </table>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD4K2MwZZmUSbmkXTCPmMvvbGniC0H7Cus",
+  authDomain: "mob-f5f16.firebaseapp.com",
+  databaseURL: "https://budgetmob-f5f16-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "budgetmob-f5f16",
+};
+
+const FIREBASE_ENABLED = firebaseConfig.apiKey !== "VOTRE_API_KEY";
+
+const STORAGE_KEY = "budget-app-data-v1";
+let data = { soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null };
+let editOpId = null;
+let editFixeId = null;
+let opType = "depense";
+let fixeType = "depense";
+let recapFilter = "toutes";
+let recapVisibleCount = 15;
+const RECAP_PAGE_SIZE = 15;
+let fixesVisibleCount = 6;
+const FIXES_PAGE_SIZE = 6;
+let dbRef = null;
+let recapSearchQuery = "";
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function formatEUR(n) { return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0); }
+function formatDateFR(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function setSyncStatus(state, text) {
+  const banner = document.getElementById("sync-banner");
+  banner.classList.remove("syncing", "offline");
+  banner.classList.add(state);
+  document.getElementById("sync-text").textContent = text;
+}
+
+function setOpType(type) {
+  opType = type;
+  document.getElementById("op-type-depense").classList.toggle("active", type === "depense");
+  document.getElementById("op-type-recette").classList.toggle("active", type === "recette");
+}
+
+function setFixeType(type) {
+  fixeType = type;
+  document.getElementById("fixe-type-depense").classList.toggle("active", type === "depense");
+  document.getElementById("fixe-type-recette").classList.toggle("active", type === "recette");
+}
+
+function setFilter(f) {
+  recapFilter = f;
+  recapVisibleCount = RECAP_PAGE_SIZE;
+  document.getElementById("filter-toutes").classList.toggle("active", f === "toutes");
+  document.getElementById("filter-attente").classList.toggle("active", f === "attente");
+  document.getElementById("filter-reglees").classList.toggle("active", f === "reglees");
+  render();
+}
+
+function openAddOp() { document.getElementById("op-form").style.display = "flex"; document.getElementById("op-toggle-btn").style.display = "none"; }
+function closeAddOp() { document.getElementById("op-form").style.display = "none"; document.getElementById("op-toggle-btn").style.display = "block"; }
+function toggleAddOp() {
+  const form = document.getElementById("op-form");
+  if (form.style.display === "none") openAddOp(); else resetOpDraft();
+}
+
+function openAddFixe() { document.getElementById("fixe-form").style.display = "flex"; document.getElementById("fixe-toggle-btn").style.display = "none"; }
+function closeAddFixe() { document.getElementById("fixe-form").style.display = "none"; document.getElementById("fixe-toggle-btn").style.display = "block"; }
+function toggleAddFixe() {
+  const form = document.getElementById("fixe-form");
+  if (form.style.display === "none") openAddFixe(); else resetFixeDraft();
+}
+
+function toggleFixesSection() {
+  const section = document.getElementById("fixes-section");
+  const btn = document.getElementById("fixes-section-toggle-btn");
+  const isOpen = section.style.display !== "none";
+  section.style.display = isOpen ? "none" : "flex";
+  btn.innerHTML = isOpen ? "&#9662; Opérations récurrentes" : "&#9652; Opérations récurrentes";
+}
+
+function toggleSearch() {
+  const input = document.getElementById("search-input");
+  const isOpen = input.style.display !== "none";
+  if (isOpen) {
+    input.style.display = "none";
+    input.value = "";
+    recapSearchQuery = "";
+    render();
+  } else {
+    input.style.display = "block";
+    input.focus();
+  }
+}
+
+function onSearchInput(value) {
+  recapSearchQuery = value.trim().toLowerCase();
+  recapVisibleCount = RECAP_PAGE_SIZE;
+  render();
+}
+
+function togglePrintMenu() {
+  const menu = document.getElementById("print-menu");
+  menu.style.display = menu.style.display === "none" ? "flex" : "none";
+}
+
+function printOperations(mode) {
+  let ops = [...data.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
+  let title = "";
+  if (mode === "last50") {
+    ops = ops.slice(0, 50);
+    title = "50 dernières opérations";
+  } else {
+    const nowKey = currentMonthKey();
+    ops = ops.filter(t => t.date.slice(0, 7) === nowKey);
+    title = `Opérations du mois (${nowKey})`;
+  }
+
+  const rows = ops.map(t => `
+    <tr>
+      <td>${formatDateFR(t.date)}</td>
+      <td>${escapeHtml(t.libelle)}</td>
+      <td style="text-align:right;color:${t.montant >= 0 ? '#1F5C46' : '#7A2A1C'}">${t.montant >= 0 ? '+' : ''}${formatEUR(t.montant)}</td>
+      <td>${t.coche ? 'Oui' : 'Non'}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("print-area").innerHTML = `
+    <h2>${title}</h2>
+    <p>Solde Banque : ${formatEUR(data.soldeBancaire)} — édité le ${new Date().toLocaleDateString("fr-FR")}</p>
+    <table>
+      <thead><tr><th>Date</th><th>Libellé</th><th>Montant</th><th>En banque</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4">Aucune opération</td></tr>'}</tbody>
+    </table>
+  `;
+  document.getElementById("print-menu").style.display = "none";
+  window.print();
+}
+
+function showMoreRecap() {
+  recapVisibleCount += RECAP_PAGE_SIZE;
+  render();
+}
+
+function showMoreFixes() {
+  fixesVisibleCount += FIXES_PAGE_SIZE;
+  render();
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null }, JSON.parse(raw));
+  } catch (e) { /* pas de donnees existantes */ }
+}
+
+function currentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function resetFixesCocheIfNewMonth() {
+  const nowKey = currentMonthKey();
+  if (!data.lastAppliedMonth) {
+    // premier lancement : on prend juste le mois en cours comme référence
+    data.lastAppliedMonth = nowKey;
+    return false;
+  }
+  if (data.lastAppliedMonth === nowKey) return false;
+  // La coche des dépenses fixes est désormais un statut permanent d'inclusion dans le Solde Réel
+  // (équivalent du "*" de la feuille de calcul) : elle ne se réinitialise plus chaque mois.
+  data.lastAppliedMonth = nowKey;
+  return true;
+}
+
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    document.getElementById("error-banner").style.display = "none";
+  } catch (e) {
+    // Le cache local a échoué (WebView restreint, mode privé...).
+    // Ce n'est pas grave si Firebase est actif : la donnée est déjà en sécurité dans le cloud.
+    if (!FIREBASE_ENABLED || !dbRef) {
+      document.getElementById("error-banner").style.display = "flex";
+    }
+  }
+}
+
+function save() {
+  saveToLocalStorage();
+  if (FIREBASE_ENABLED && dbRef) {
+    set(dbRef, data).catch(() => {
+      document.getElementById("error-banner").textContent = "Synchronisation impossible (verifiez votre connexion).";
+      document.getElementById("error-banner").style.display = "flex";
+    });
+  }
+}
+
+async function initFirebaseSync() {
+  if (!FIREBASE_ENABLED) {
+    loadFromLocalStorage();
+    const changed = resetFixesCocheIfNewMonth();
+    if (changed) saveToLocalStorage();
+    setSyncStatus("offline", "Hors ligne (config Firebase manquante)");
+    render();
+    return;
+  }
+  try {
+    setSyncStatus("offline", "Connexion en cours...");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    await signInAnonymously(auth);
+    dbRef = ref(db, "budget");
+    onValue(dbRef, (snapshot) => {
+      const remote = snapshot.val();
+      if (remote) {
+        data = Object.assign({ soldeBancaire: 0, transactions: [], depensesFixes: [], lastAppliedMonth: null }, remote);
+        const changed = resetFixesCocheIfNewMonth();
+        if (changed) { save(); } else { saveToLocalStorage(); }
+      } else {
+        loadFromLocalStorage();
+        resetFixesCocheIfNewMonth();
+        set(dbRef, data);
+      }
+      setSyncStatus("syncing", "Synchronise entre vos appareils");
+      render();
+    }, () => {
+      loadFromLocalStorage();
+      setSyncStatus("offline", "Hors ligne (connexion perdue)");
+      render();
+    });
+  } catch (e) {
+    loadFromLocalStorage();
+    setSyncStatus("offline", "Hors ligne (config Firebase invalide)");
+    render();
+  }
+}
+
+function startEditSolde() {
+  document.getElementById("solde-display").classList.add("hidden");
+  document.getElementById("solde-edit").classList.add("active");
+  const input = document.getElementById("solde-input");
+  input.value = data.soldeBancaire;
+  input.focus();
+}
+
+function saveSolde() {
+  const val = parseFloat(document.getElementById("solde-input").value.replace(",", "."));
+  if (isNaN(val)) return;
+  data.soldeBancaire = val;
+  save();
+  document.getElementById("solde-display").classList.remove("hidden");
+  document.getElementById("solde-edit").classList.remove("active");
+  render();
+}
+
+function toggleDraftCoche(prefix) {
+  const btn = document.getElementById(prefix + "-coche");
+  btn.classList.toggle("on");
+}
+
+function resetOpDraft() {
+  editOpId = null;
+  document.getElementById("op-date").value = todayISO();
+  document.getElementById("op-libelle").value = "";
+  document.getElementById("op-montant").value = "";
+  document.getElementById("op-coche").classList.remove("on");
+  document.getElementById("op-submit").textContent = "+ Ajouter";
+  document.getElementById("op-cancel").classList.remove("active");
+  setOpType("depense");
+  closeAddOp();
+}
+
+function handleAddOp() {
+  const date = document.getElementById("op-date").value;
+  const libelle = document.getElementById("op-libelle").value.trim();
+  let montant = parseFloat(document.getElementById("op-montant").value.replace(",", "."));
+  const coche = document.getElementById("op-coche").classList.contains("on");
+  if (!date || !libelle || isNaN(montant)) return;
+  montant = opType === "depense" ? -Math.abs(montant) : Math.abs(montant);
+
+  if (editOpId) {
+    const t = data.transactions.find(x => x.id === editOpId);
+    if (t) { t.date = date; t.libelle = libelle; t.montant = montant; t.coche = coche; }
+  } else {
+    data.transactions.push({ id: uid(), date, libelle, montant, coche });
+  }
+  save();
+  resetOpDraft();
+  render();
+}
+
+function startEditOp(id) {
+  const t = data.transactions.find(x => x.id === id);
+  if (!t) return;
+  editOpId = id;
+  document.getElementById("op-date").value = t.date;
+  document.getElementById("op-libelle").value = t.libelle;
+  document.getElementById("op-montant").value = Math.abs(t.montant);
+  setOpType(t.montant < 0 ? "depense" : "recette");
+  document.getElementById("op-coche").classList.toggle("on", t.coche);
+  document.getElementById("op-submit").textContent = "\u2713 Enregistrer";
+  document.getElementById("op-cancel").classList.add("active");
+  openAddOp();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteOp(id) {
+  data.transactions = data.transactions.filter(x => x.id !== id);
+  if (editOpId === id) resetOpDraft();
+  save();
+  render();
+}
+
+function toggleOpCoche(id) {
+  const t = data.transactions.find(x => x.id === id);
+  if (t) t.coche = !t.coche;
+  save();
+  render();
+}
+
+function resetFixeDraft() {
+  editFixeId = null;
+  document.getElementById("fixe-libelle").value = "";
+  document.getElementById("fixe-montant").value = "";
+  document.getElementById("fixe-jour").value = "";
+  document.getElementById("fixe-submit").textContent = "+ Ajouter";
+  document.getElementById("fixe-cancel").classList.remove("active");
+  setFixeType("depense");
+  closeAddFixe();
+}
+
+function handleAddFixe() {
+  const libelle = document.getElementById("fixe-libelle").value.trim();
+  const montant = parseFloat(document.getElementById("fixe-montant").value.replace(",", "."));
+  const jourRaw = document.getElementById("fixe-jour").value;
+  const jour = jourRaw ? parseInt(jourRaw, 10) : null;
+  if (!libelle || isNaN(montant)) return;
+
+  if (editFixeId) {
+    const f = data.depensesFixes.find(x => x.id === editFixeId);
+    if (f) { f.libelle = libelle; f.montant = Math.abs(montant); f.jour = jour; f.type = fixeType; }
+  } else {
+    data.depensesFixes.push({ id: uid(), libelle, montant: Math.abs(montant), jour, coche: true, type: fixeType });
+  }
+  save();
+  resetFixeDraft();
+  render();
+}
+
+function startEditFixe(id) {
+  const f = data.depensesFixes.find(x => x.id === id);
+  if (!f) return;
+  editFixeId = id;
+  document.getElementById("fixe-libelle").value = f.libelle;
+  document.getElementById("fixe-montant").value = f.montant;
+  document.getElementById("fixe-jour").value = f.jour || "";
+  setFixeType(f.type || "depense");
+  document.getElementById("fixe-submit").textContent = "\u2713 Enregistrer";
+  document.getElementById("fixe-cancel").classList.add("active");
+  openAddFixe();
+}
+
+function deleteFixe(id) {
+  data.depensesFixes = data.depensesFixes.filter(x => x.id !== id);
+  if (editFixeId === id) resetFixeDraft();
+  save();
+  render();
+}
+
+function toggleFixeCoche(id) {
+  const f = data.depensesFixes.find(x => x.id === id);
+  if (!f) return;
+  f.coche = !f.coche;
+  save();
+  render();
+}
+
+function checkAllFixes() {
+  data.depensesFixes.forEach(f => { f.coche = true; });
+  save();
+  render();
+}
+
+function uncheckAllFixes() {
+  data.depensesFixes.forEach(f => { f.coche = false; });
+  save();
+  render();
+}
+
+function render() {
+  document.getElementById("solde-value").textContent = formatEUR(data.soldeBancaire);
+
+  // Une dépense saisie en "En Cours" est déduite immédiatement du Solde Réel.
+  // Une fois "pointée en banque" (coche = true), elle est considérée comme déjà incluse
+  // dans le Solde Banque saisi à la main : on ne la déduit plus une 2e fois.
+  const impactTrans = data.transactions
+    .filter(t => !t.coche)
+    .reduce((s, t) => s + Number(t.montant), 0);
+  const impactFixesCochees = data.depensesFixes
+    .filter(f => f.coche && f.type !== "recette")
+    .reduce((s, f) => s - Math.abs(Number(f.montant)), 0);
+  const soldeReel = Number(data.soldeBancaire) + impactTrans + impactFixesCochees;
+
+  document.getElementById("solde-reel-value").textContent = formatEUR(soldeReel);
+  document.getElementById("solde-reel-box").style.background = soldeReel >= 0 ? "#1F5C46" : "#7A2A1C";
+
+  let operationsTriees = [...data.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (recapFilter === "attente") operationsTriees = operationsTriees.filter(t => !t.coche);
+  if (recapFilter === "reglees") operationsTriees = operationsTriees.filter(t => t.coche);
+  if (recapSearchQuery) operationsTriees = operationsTriees.filter(t => t.libelle.toLowerCase().includes(recapSearchQuery));
+
+  const recapEl = document.getElementById("recap-content");
+  if (operationsTriees.length === 0) {
+    const msg = recapSearchQuery ? "Aucune opération ne correspond à la recherche." : recapFilter === "attente" ? "Aucune opération en attente." : recapFilter === "reglees" ? "Aucune opération réglée." : "Aucune opération enregistrée.";
+    recapEl.innerHTML = `<p class="empty-text">${msg}</p>`;
+  } else {
+    const visibles = operationsTriees.slice(0, recapVisibleCount);
+    const reste = operationsTriees.length - visibles.length;
+    recapEl.innerHTML = '<ul class="recap-list">' + visibles.map(t => `
+      <li class="recap-row">
+        <span class="recap-date">${formatDateFR(t.date)}</span>
+        <span class="recap-libelle">${escapeHtml(t.libelle)}</span>
+        <span class="recap-montant" style="color:${t.montant >= 0 ? '#1F5C46' : '#7A2A1C'}">${t.montant >= 0 ? '+' : ''}${formatEUR(t.montant)}</span>
+        <button class="recap-coche-btn ${t.coche ? 'on' : ''}" title="Marquer comme passée en banque" onclick="toggleOpCoche('${t.id}')">${t.coche ? '&#10003;' : ''}</button>
+        <span class="recap-row-actions">
+          <button class="mini-btn" onclick="startEditOp('${t.id}')">&#9998;</button>
+          <button class="mini-btn" onclick="deleteOp('${t.id}')">&#128465;</button>
+        </span>
+      </li>
+    `).join("") + '</ul>' + (reste > 0 ? `<button class="show-more-btn" onclick="showMoreRecap()">Voir ${Math.min(reste, RECAP_PAGE_SIZE)} de plus (${reste} restantes)</button>` : '');
+  }
+
+  const fixesTriees = [...data.depensesFixes].sort((a, b) => (a.jour || 0) - (b.jour || 0));
+  const fixeListEl = document.getElementById("fixe-list");
+  const fixesVisibles = fixesTriees.slice(0, fixesVisibleCount);
+  const fixesReste = fixesTriees.length - fixesVisibles.length;
+  fixeListEl.innerHTML = fixesVisibles.map(f => {
+    const isRecette = f.type === "recette";
+    return `
+    <li class="op-row">
+      <button class="checkbox ${f.coche ? 'on' : ''}" title="${f.coche ? 'Incluse dans le Solde Reel (decocher pour exclure)' : 'Exclue du Solde Reel'}" onclick="toggleFixeCoche('${f.id}')">${f.coche ? '&#10003;' : ''}</button>
+      <span class="op-main" onclick="startEditFixe('${f.id}')">
+        <span class="op-libelle">${escapeHtml(f.libelle)}</span>
+        ${f.jour ? `<span class="fixe-jour">le ${f.jour}</span>` : ''}
+      </span>
+      <span class="op-montant" style="color:${isRecette ? '#1F5C46' : '#7A2A1C'}">${isRecette ? '+' : '-'}${formatEUR(f.montant)}</span>
+      <button class="mini-btn" onclick="deleteFixe('${f.id}')">&#128465;</button>
+    </li>
+  `;
+  }).join("") + (fixesReste > 0 ? `<button class="show-more-btn" onclick="showMoreFixes()">Voir ${Math.min(fixesReste, FIXES_PAGE_SIZE)} de plus (${fixesReste} restantes)</button>` : '');
+
+  const infoEl = document.getElementById("apply-now-info");
+  if (infoEl) {
+    infoEl.textContent = "Solde Réel = Solde Banque (100% manuel) − opérations En Cours non pointées − dépenses fixes cochées. Une opération En Cours se déduit dès sa saisie ; cochez-la \u00ab pointée en banque \u00bb une fois débitée sur votre compte pour éviter qu'elle compte 2 fois quand vous mettez à jour le Solde Banque. Décochez une dépense fixe pour l'exclure durablement (ex: pécule, assurance vie).";
+  }
+}
+
+Object.assign(window, {
+  startEditSolde, saveSolde, toggleDraftCoche, setOpType, setFixeType, resetOpDraft, handleAddOp,
+  setFilter, showMoreRecap, showMoreFixes, toggleOpCoche, startEditOp, deleteOp,
+  resetFixeDraft, handleAddFixe, toggleFixeCoche, startEditFixe, deleteFixe,
+  toggleAddOp, toggleAddFixe, toggleFixesSection, toggleSearch, onSearchInput,
+  togglePrintMenu, printOperations, checkAllFixes, uncheckAllFixes,
+});
+
+document.getElementById("op-date").value = todayISO();
+initFirebaseSync();
+
+["op-date", "op-libelle", "op-montant"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); handleAddOp(); }
+  });
+});
+["fixe-libelle", "fixe-montant", "fixe-jour"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); handleAddFixe(); }
+  });
+});
+</script>
+
+
+
+</body></html>
